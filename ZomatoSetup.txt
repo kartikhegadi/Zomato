@@ -483,10 +483,174 @@ eksctl create nodegroup --cluster=kastrocluster `
 Step 05: Verify Cluster & Nodes
 Goto EKS Service in AWS and check for the cluster creation
 
+OR)
+eksctl create nodegroup --cluster=kastrocluster --region=ap-northeast-1 --name=kastrodemo-ng-public1 --node-type=t3.medium --nodes=2 --nodes-min=2 --nodes-max=4 --node-volume-size=20 --ssh-access --ssh-public-key=Prajwal --managed --asg-access --external-dns-access --full-ecr-access --appmesh-access --alb-ingress-access
+
+(OR)
+eksctl create nodegroup --cluster=kastrocluster `
+    --region=ap-northeast-1 `
+    --name=kastrodemo-ng-public1 `
+    --node-type=t3.medium `
+    --nodes=2 `
+    --nodes-min=2 `
+    --nodes-max=4 `
+    --node-volume-size=20 `
+    --ssh-access `
+    --ssh-public-key=Prajwal `
+    --managed `
+    --asg-access `
+    --external-dns-access `
+    --full-ecr-access `
+    --appmesh-access `
+    --alb-ingress-access
+
+Step 05: Verify Cluster & Nodes
+Goto EKS Service in AWS and check for the cluster creation
+
+
+******************************************
+Optional - do it at the end of complete demo
+******************************************
+Step 06: Delete Node Group
+# List EKS Clusters
+eksctl get clusters
+
+# Capture Node Group name
+eksctl get nodegroup --cluster=<clusterName>
+eksctl get nodegroup --cluster=kastrocluster
+
+# Delete Node Group
+eksctl delete nodegroup --cluster=<clusterName> --name=<nodegroupName>
+eksctl delete nodegroup --cluster=kastrocluster --name=kastrodemo-ng-public1
+
+Step 07: Delete Cluster
+# Delete Cluster
+eksctl delete cluster <clusterName>
+eksctl delete cluster kastrocluster
+********************************************************************************
+********************************************************************************
+Let us deploy the same application in the EKS cluster also
+------------------------------------------------------------
+15.6: Argo CD installation
+------------------------------------------------------------
+Inorder to monitor k8s with Prometheus, we need to install ArgoCD. Lets do that
+Execute the below commands in vs code editor
+
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.4.7/manifests/install.yaml
+
+wait for sometime till the namespace gets created.
+The above command will create a namespace with "argocd" name
+
+By default the argo CD server is not publicly exposed, so we need to expose it publicly. To do that, execute the below command;
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+
+(OR) Command Prompt Execution
+kubectl patch svc argocd-server -n argocd -p "{\"spec\": {\"type\": \"LoadBalancer\"}}"
+
+After successful execution you should see "patched"
+
+To see the namespace got created or not ----> kubectl get ns ----> you will see argocd namespace
+To see the pods available in the argocd namespace ----> kubectl get pods -n argocd ----> you will see the pods
+
+Wait for 5 minutes for the load balancer creation. Once the loadbalancer is created, we will get the load balancer url.
+
+Meanwhile execute the below commands in vs code editor
+
+------------------------------------------------------------
+15.7: Monitor Kubernetes with Prometheus
+------------------------------------------------------------
+Used to monitor Kubernetes cluster.
+Additionally, you'll install the node exporter using Helm to collect metrics from your cluster nodes.
+
+Install Node Exporter using Helm
+To begin monitoring your Kubernetes cluster, you'll install the Prometheus Node Exporter. This component allows you to collect system-level metrics from your cluster nodes. Here are the steps to install the Node Exporter using Helm:
+
+Add the Prometheus Community Helm repository:
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+Create a Kubernetes namespace for the Node Exporter:
+kubectl create namespace prometheus-node-exporter
+
+Install the Node Exporter using Helm:
+helm install prometheus-node-exporter prometheus-community/prometheus-node-exporter --namespace prometheus-node-exporter
+
+Lets continue with load balancer thing of previous step; execute the below in VS code editor
+export ARGOCD_SERVER=`kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname'`
+
+Execute the below command in powershell, if the command doesn't get executed in VS Code Editor
+$env:ARGOCD_SERVER = $(kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')
+
+
+(Ref URL: https://archive.eksworkshop.com/intermediate/290_argocd/configure/)
+
+To get the loadbalancer url;
+echo $ARGOCD_SERVER
+
+Execute the below command in powershell, if the command doesn't get executed in VS Code Editor
+echo $env:ARGOCD_SERVER
+
+You will see the load balancer url, copy it and paste in browser. You will see the ArgoCD Homepage.
+Username is "admin"
+To get the password, execute the below command in vs code editor;
+export ARGO_PWD=`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d`
+
+Execute the below command in powershell, if the command doesn't get executed in VS Code Editor
+$env:ARGO_PWD = (kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | % { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) })
+
+To see the password;
+echo $ARGO_PWD
+
+Execute the below command in powershell, if the command doesn't get executed in VS Code Editor
+echo $env:ARGO_PWD
+
+You will see the password. copy and paste it in the argo cd homepage --->login
+
+<Follow the process as explained in the video>
+
+Note: In the repo, in Kubernetes folder, in the deployment.yml file, in the containers section change the dockerhub username
+
+Add a Job to Scrape Metrics on nodeip:9001/metrics in prometheus.yml:
+
+Update your Prometheus configuration (prometheus.yml) to add a new job for scraping metrics from nodeip:9001/metrics. You can do this by adding the following configuration to your prometheus.yml file:
+Go to the monitoring server tab in Moba and execute the below commands;
+sudo vi /etc/prometheus/prometheus.yml ----> Paste the below commands at the bottom of screen ----> 
+  - job_name: 'k8s'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['nodeIP:9100']
+
+In the above, to get the "nodeIP", goto EKS in AWS ----> Click on EKS Cluster ----> "Compute" tab ----> Nodes ----> Click on any one node ----> Click on the "instance id" ----> Copy the public ip ----> Paste in the above script
+
+The static_configs section specifies the targets to scrape metrics from, and in this case, it's set to nodeip:9001.
+
+----> esc ----> :wq ----> promtool check config /etc/prometheus/prometheus.yml ----> You should see "Success" ----> Check the validity of the configuration file ----> promtool check config /etc/prometheus/prometheus.yml ----> curl -X POST http://localhost:9090/-/reload
+
+Goto Prometheus and reload. Goto ArgoCD and reload to see whether the pipeline is done or not
+
+Copy the public ip of "nodeIP" which we have done exactly 4 steps above this line ---> Goto browser and paste it:30001 ----> Make sure to open the port 30001 for the "nodeIP:" VM ----> You will see the application
+
+Note: If you see error in Prometheus under "k8s", open port number 9100 for the EC2 instances which were created as part of EKS cluster i.e nodes
+
+After everything is done. Delete everything. Make sure to delete the Cloud Formation Stacks.
+
+========================================================================================================
+Kind Request:
+Once after you have successfully deployed the App, kindly share your experience on LinkedIn by Tagging me and also provide the YouTube link of this project in your post, as it helps others to access the video quickly. 
+========================================================================================================
+												HAPPY LEARNING
+
+
+
 
 --------------------------------------------
 gzfwsonyhsmxhtqr
 
+--------------------------------------------
+ export ARGO_PWD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+root@ip-172-31-33-145:~# echo $ARGO_PWD
+2pJYSRTwWbZuNduU
+root@ip-172-31-33-145:~# 
 --------------------------------------------
 
 
