@@ -21,13 +21,96 @@ Custom TCP   3000   AnyWhereIPv4 ----> App and Grafana Port
 2. Connect to the instance
 3. Update the packages
 --------------------------------------------
+3. Update the packages
+
 $ switch to root user ---> sudo su
 $ sudo apt update -y
 --------------------------------------------
-google app password 
+4. Install AWS CLI
+sudo apt install unzip -y
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
 
-nffm jwmv uyji towf
 --------------------------------------------
+
+5. Install Jenkins on Ubuntu
+(Reference URL for commands: https://www.jenkins.io/doc/book/installing/linux/#debianubuntu)
+
+vi jenkins.sh 
+
+#!/bin/bash
+sudo apt update -y
+sudo apt install fontconfig openjdk-21-jre
+java -version
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+    https://pkg.jenkins.io/rpm-stable/jenkins.repo
+sudo dnf upgrade
+# Add required dependencies for the Jenkins package
+sudo dnf install fontconfig java-21-openjdk
+sudo dnf install jenkins
+sudo systemctl daemon-reload
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
+sudo systemctl status jenkins
+
+5.1. Open Port No. 8080 for VM and access Jenkins
+5.2. Setup Jenkins by following the necessary steps
+
+6. Install Docker on Ubuntu
+
+vi docker.sh 
+
+#!/bin/bash
+sudo apt update -y
+sudo apt remove $(dpkg --get-selections docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc | cut -f1)
+# Add Docker's official GPG key:
+sudo apt update
+sudo apt install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin -y docker-compose-plugin -y
+sudo systemctl status docker
+sudo systemctl start docker
+
+sudo usermod -aG docker ubuntu
+sudo chmod 777 /var/run/docker.sock
+newgrp docker
+sudo systemctl status docker
+
+sudo docker run hello-world
+
+curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
+sh install-scout.sh
+
+8. Install Docker Scout
+curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
+sh install-scout.sh
+
+9. Install SonarQube using Docker
+$ docker run -d --name sonar -p 9000:9000 sonarqube:lts-community
+$ docker ps (You can see SonarQube container)
+
+10. Installation of Plugins in Jenkins
+Install below plugins:
+
+--------------------------------------------
+
+--------------------------------------------
+
+
 kartik404
 mydocker!123
 --------------------------------------------
