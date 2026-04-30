@@ -1,8 +1,5 @@
 https://github.com/kartikhegadi/Zomato.git
 --------------------------------------------
-
-
-
 1. Launch an Instance (Ubuntu, 24.04, t2.large, 30 GB)
 --------------------------------------------
 
@@ -635,25 +632,4 @@ Note: If you see error in Prometheus under "k8s", open port number 9100 for the 
 After everything is done. Delete everything. Make sure to delete the Cloud Formation Stacks.
 
 ========================================================================================================
-Kind Request:
-Once after you have successfully deployed the App, kindly share your experience on LinkedIn by Tagging me and also provide the YouTube link of this project in your post, as it helps others to access the video quickly. 
-========================================================================================================
-												HAPPY LEARNING
 
-
-
-
---------------------------------------------
-gzfwsonyhsmxhtqr
-
---------------------------------------------
- export ARGO_PWD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-root@ip-172-31-33-145:~# echo $ARGO_PWD
-2pJYSRTwWbZuNduU
-root@ip-172-31-33-145:~# 
---------------------------------------------
-
-
-kartik404
-mydocker!123
---------------------------------------------
