@@ -1,7 +1,7 @@
 pipeline {
     agent any
     tools {
-        jdk 'jdk17'
+        jdk 'jdk21'
         nodejs 'node23'
     }
     environment {
@@ -15,7 +15,7 @@ pipeline {
         }
         stage ("Git Checkout") {
             steps {
-                git 'https://github.com/KastroVKiran/Zomato-Project-Kastro.git'
+               git branch: 'main', url: 'https://github.com/kartikhegadi/Zomato.git'
             }
         }
         stage("Sonarqube Analysis"){
@@ -29,23 +29,29 @@ pipeline {
         stage("Code Quality Gate"){
            steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token' 
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
                 }
             } 
         }
+         stage('Debug') {
+                steps {
+                sh 'pwd'
+                sh 'ls -la'
+                }
+         }
         stage("Install NPM Dependencies") {
             steps {
                 sh "npm install"
             }
-        
-     stage('OWASP FS SCAN') {
+        }
+     
+    stage('OWASP FS SCAN') {
             steps {
                 dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit -n', odcInstallation: 'DP-Check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
         }
         }
-       
-        stage ("Trivy File Scan") {
+      stage ("Trivy File Scan") {
             steps {
                 sh "trivy fs . > trivy.txt"
             }
@@ -59,26 +65,26 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker') {
-                        sh "docker tag zomato kastrov/zomato:latest "
-                        sh "docker push kastrov/zomato:latest "
+                        sh "docker tag zomato kartik404/zomato:latest "
+                        sh "docker push kartik404/zomato:latest "
                     }
                 }
             }
         }
         stage('Docker Scout Image') {
             steps {
-                script{
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){
-                       sh 'docker-scout quickview kastrov/zomato:latest'
-                       sh 'docker-scout cves kastrov/zomato:latest'
-                       sh 'docker-scout recommendations kastrov/zomato:latest'
-                   }
-                }
+                script {
+            withDockerRegistry(credentialsId: 'docker') {
+                sh 'docker scout quickview kartik404/zomato:latest'
+                sh 'docker scout cves kartik404/zomato:latest'
+                sh 'docker scout recommendations kartik404/zomato:latest'
+             }
             }
+        }
         }
         stage ("Deploy to Container") {
             steps {
-                sh 'docker run -d --name zomato -p 3000:3000 kastrov/zomato:latest'
+                sh 'docker run -d --name zomato -p 3000:3000 kartik404/zomato:latest'
             }
         }
     }
@@ -101,12 +107,11 @@ pipeline {
                 </body>
                 </html>
             """,
-            to: 'kastrokiran@gmail.com',
+            to: 'prajwal.ccs.aws@gmail.com',
             mimeType: 'text/html',
             attachmentsPattern: 'trivy.txt'
         }
     }
 }
-
 
 
